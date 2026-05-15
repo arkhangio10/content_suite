@@ -211,6 +211,54 @@ export default function ArchitectPage() {
       })
     : null;
 
+  const isApprover = user?.role === 'approver_a' || user?.role === 'approver_b';
+
+  // Approvers: read-only library — no generation form
+  if (isApprover) {
+    return (
+      <div>
+        <section className="paper-warm border-b border-hairline">
+          <div className="max-w-5xl mx-auto px-8 pt-12 pb-10">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent mb-3">Brand DNA Architect</p>
+            <h1 className="text-[44px] md:text-[56px] font-bold tracking-editorial leading-[1.0] text-ink max-w-3xl">
+              Manuales de marca <span className="font-serif italic font-normal">de referencia.</span>
+            </h1>
+            <p className="text-inksoft text-[15px] leading-relaxed mt-4 max-w-2xl">
+              Consulta los manuales generados por el equipo creativo. Cada manual contiene las reglas de marca que se inyectaron al generar el contenido que estás revisando.
+            </p>
+          </div>
+        </section>
+        <section className="max-w-5xl mx-auto px-8 py-10 space-y-8">
+          {manualsList.length > 0 ? (
+            <ManualsList manuals={manualsList} />
+          ) : (
+            <V2Card className="text-center py-12 paper-warm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-inkmute mb-2">Biblioteca</p>
+              <h2 className="text-xl font-semibold tracking-editorial text-ink">
+                Aún no hay manuales <span className="font-serif italic font-normal">disponibles.</span>
+              </h2>
+              <p className="text-[13px] text-inksoft mt-2 max-w-md mx-auto">
+                Cuando el equipo creativo genere manuales, aparecerán aquí para que puedas consultarlos.
+              </p>
+            </V2Card>
+          )}
+          {savedManual && (
+            <div className="animate-slide-up-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-inkmute">
+                  Vista previa del manual
+                </p>
+                <span className="h-px flex-1 bg-hairline"></span>
+                <p className="text-[10px] mono text-inkmute">{savedManual.brand_id}</p>
+              </div>
+              <ManualSpread manual={savedManual} />
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div>
       <section className="paper-warm border-b border-hairline">
