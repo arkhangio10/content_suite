@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────
+# SECRETS — never commit these
+# ─────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*credentials*.json
+
+# ─────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ─────────────────────────────────────────────
+# Node / Frontend
+# ─────────────────────────────────────────────
+node_modules/
+.next/
+.nuxt/
+out/
+dist/
+.vite/
+.parcel-cache/
+*.tsbuildinfo
+
+# ─────────────────────────────────────────────
+# Playwright artefacts (regenerable; keep e2e/ source)
+# ─────────────────────────────────────────────
+playwright-report/
+test-results/
+playwright/.cache/
+
+# ─────────────────────────────────────────────
+# Backend output artefacts (regenerable)
+# ─────────────────────────────────────────────
+brand_manual_*.json
+*.local.json
+
+# ─────────────────────────────────────────────
+# Personal / private docs
+# ─────────────────────────────────────────────
+Manual_Estudio_Defensa.pdf
+*.private.md
+notes/
+
+# ─────────────────────────────────────────────
+# OS / Editors
+# ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# ─────────────────────────────────────────────
+# Logs & local artefacts
+# ─────────────────────────────────────────────
+*.log
+logs/
+tmp/
+*.local
+
+# ─────────────────────────────────────────────
+# Keep (force-include)
+# ─────────────────────────────────────────────
+!uv.lock
+!package-lock.json
+!.env.example
