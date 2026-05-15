@@ -221,6 +221,7 @@ async def run_brand_dna_pipeline(
 
             if judge_result.verdict == "reject":
                 log.warning("pipeline_judge_reject", attempt=attempt, score=judge_result.scores.overall)
+                score_trace("cost_actual_usd", round(budget.summary().get("spent_usd", 0), 4), comment="TraceBudget real cost (cache-adjusted). Langfuse inflates ~7x.")
                 _phase("done")
                 return PipelineResult(
                     manual=manual,
@@ -233,6 +234,7 @@ async def run_brand_dna_pipeline(
 
             if attempt == max_iters:
                 log.warning("pipeline_max_repairs_reached", score=judge_result.scores.overall)
+                score_trace("cost_actual_usd", round(budget.summary().get("spent_usd", 0), 4), comment="TraceBudget real cost (cache-adjusted). Langfuse inflates ~7x.")
                 _phase("done")
                 return PipelineResult(
                     manual=manual,
@@ -250,6 +252,7 @@ async def run_brand_dna_pipeline(
                 log.error("repair_failed", error=str(exc), attempt=attempt)
                 break
 
+        score_trace("cost_actual_usd", round(budget.summary().get("spent_usd", 0), 4), comment="TraceBudget real cost (cache-adjusted). Langfuse inflates ~7x.")
         _phase("done")
         return PipelineResult(
             manual=manual,
