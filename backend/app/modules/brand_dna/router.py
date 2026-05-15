@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -137,7 +138,7 @@ async def _persist_manual_rest(
         job_id=job_id,
         brand_id=manual.meta.brand_id,
         version=manual.meta.version,
-        manual_json=manual.model_dump(by_alias=True),
+        manual_json=json.loads(manual.model_dump_json(by_alias=True)),
         status=result.status,
         trace_id=result.trace_id,
         judge_scores=judge_payload,
