@@ -215,6 +215,18 @@ async def load_recent_brand_manuals(limit: int = 20) -> list[dict[str, Any]]:
     )
 
 
+async def load_brand_manual_by_brand_id(brand_id: str) -> dict[str, Any] | None:
+    """Read the latest brand manual for a given brand_id (REST fallback)."""
+    rows = await _select(
+        "brand_manuals",
+        select="id,brand_id,version,manual_json,status,judge_scores,cost_usd,cache_hit_rate,creator_id,created_at",
+        eq={"brand_id": brand_id},
+        order="version.desc",
+        limit=1,
+    )
+    return rows[0] if rows else None
+
+
 # ---------------------------------------------------------------------------
 # content_items
 # ---------------------------------------------------------------------------

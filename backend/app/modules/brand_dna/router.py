@@ -399,7 +399,7 @@ async def get_brand_manual(brand_id: str, user: AnyAuthenticated) -> dict[str, A
                 "source": "cache",
             }
 
-    # Fall back to DB
+    # Fall back to direct DB (asyncpg)
     try:
         from app.db.client import fetch_one
         row = await fetch_one(
@@ -412,17 +412,37 @@ async def get_brand_manual(brand_id: str, user: AnyAuthenticated) -> dict[str, A
             """,
             brand_id,
         )
-        if row is None:
-            raise HTTPException(status_code=404, detail=f"Brand manual for '{brand_id}' not found")
-        return {
-            "brand_id": brand_id,
-            "version": row["version"],
-            "status": row["status"],
-            "manual": row["manual_json"],
-            "source": "database",
-        }
-    except ImportError:
+        if row is not None:
+            return {
+                "brand_id": brand_id,
+                "version": row["version"],
+                "status": row["status"],
+                "manual": row["manual_json"],
+                "source": "database",
+            }
+    except (ImportError, RuntimeError) as exc:
+        # asyncpg pool unavailable — fall through to REST
+        log.info("get_brand_manual_pool_unavailable", brand_id=brand_id, error=str(exc))
+    except Exception as exc:
+        log.warning("get_brand_manual_pool_error", brand_id=brand_id, error=str(exc))
+
+    # Last resort: REST fallback (works without the pool)
+    try:
+        from app.db.persistence_rest import load_brand_manual_by_brand_id
+        row = await load_brand_manual_by_brand_id(brand_id)
+    except Exception as exc:
+        log.warning("get_brand_manual_rest_error", brand_id=brand_id, error=str(exc))
+        row = None
+
+    if row is None:
         raise HTTPException(status_code=404, detail=f"Brand manual for '{brand_id}' not found")
+    return {
+        "brand_id": brand_id,
+        "version": row["version"],
+        "status": row["status"],
+        "manual": row["manual_json"],
+        "source": "supabase_rest",
+    }
 
 
 @router.get("/{brand_id}/retrieve", summary="RAG retrieval from brand manual")
