@@ -403,10 +403,14 @@ async def audit_image(
         raise HTTPException(status_code=415, detail=f"Unsupported image type: {image.content_type}")
 
     raw_bytes = await image.read()
-    if len(raw_bytes) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Image too large (max 5 MB)")
-
     image_b64 = base64.standard_b64encode(raw_bytes).decode()
+    # Claude Vision limit is 5 MB on the base64-encoded payload (not raw bytes).
+    # base64 adds ~33% overhead, so a 3.8 MB file can exceed the limit.
+    if len(image_b64) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Imagen demasiado grande para Claude Vision. El archivo pesa {len(raw_bytes) // 1024} KB pero codificado en base64 supera los 5 MB permitidos. Usa una imagen menor a 3.7 MB.",
+        )
     media_type = image.content_type or "image/jpeg"
 
     try:
