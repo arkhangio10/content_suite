@@ -329,7 +329,7 @@ async def submit_for_review(
 
     try:
         from app.db.persistence_rest import update_content_item_status, save_audit_log
-        await update_content_item_status(content_id=content_id, status="submitted")
+        await update_content_item_status(content_id=content_id, status="pending_approver_a")
         await save_audit_log(
             action="submit",
             actor_id=str(current_user.id),
