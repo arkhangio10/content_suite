@@ -192,7 +192,7 @@ function ApproverAQueue() {
                       <span className="text-[10px] mono text-inkmute">{item.content_id.slice(0, 8)}</span>
                       <V2Pill status="pendiente_aprobacion" />
                     </div>
-                    <p className="font-serif italic text-[18px] leading-snug text-ink line-clamp-2">
+                    <p className="font-serif italic text-[18px] leading-snug text-ink">
                       "{item.excerpt}"
                     </p>
                     <p className="text-[11px] text-inkmute mt-2">
