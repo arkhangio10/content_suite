@@ -28,6 +28,7 @@ import {
 } from '@/components/ui';
 import { V2_BRANDS, V2_CONTENT_TYPES } from '@/data';
 import { useGenerateContent } from '@/hooks/useCreative';
+import { useListBrandManuals } from '@/hooks/useBrandDna';
 import { useSubmitContentForReview } from '@/hooks/useGovernance';
 
 const CONTENT_TYPE_ICONS = {
@@ -67,6 +68,9 @@ export default function CreativePage() {
   })();
 
   const [brandId, setBrandId] = useState(initialBrand);
+  const [showSelector, setShowSelector] = useState(false);
+  const { data: manualsData } = useListBrandManuals();
+  const availableBrands = manualsData?.manuals ?? [];
   const [form, setForm] = useState({
     type: 'social_post',
     language: 'Español Perú',
@@ -131,8 +135,8 @@ export default function CreativePage() {
     }
   };
 
-  // No brand yet → empty state, prompt to create one first
-  if (!initialBrand && !brandId.trim()) {
+  // Brand selector screen — shown on first visit or after "Cambiar marca"
+  if (!brandId.trim() || showSelector) {
     return (
       <div>
         <section className="paper-warm border-b border-hairline">
@@ -144,37 +148,68 @@ export default function CreativePage() {
           </div>
         </section>
         <section className="max-w-3xl mx-auto px-8 py-16">
-          <V2Card className="text-center py-14 paper-warm">
+          <V2Card className="py-10 px-8 paper-warm">
             <div className="h-14 w-14 rounded-2xl bg-accentsoft text-accent grid place-items-center mx-auto mb-5">
               <IconBook size={22} />
             </div>
-            <h2 className="text-2xl font-semibold tracking-editorial text-ink">
-              Necesitas un manual <span className="font-serif italic font-normal">primero.</span>
+            <h2 className="text-2xl font-semibold tracking-editorial text-ink text-center">
+              Selecciona una <span className="font-serif italic font-normal">marca.</span>
             </h2>
-            <p className="text-inksoft text-[14px] leading-relaxed mt-3 max-w-md mx-auto">
-              Creative Engine consulta el manual de marca (pgvector + voyage-multilingual-2) antes de redactar. Genera uno desde Brand DNA Architect.
+            <p className="text-inksoft text-[14px] leading-relaxed mt-3 max-w-md mx-auto text-center">
+              Creative Engine carga el manual de la marca antes de redactar.
             </p>
-            <V2Button variant="accent" size="md" className="mt-6" onClick={() => navigate('/brand-dna')}>
-              Ir a Brand DNA Architect <IconArrowRight size={14} />
-            </V2Button>
-            <p className="text-[11px] text-inkmute mt-6">
-              o si ya tienes el <span className="mono">brand_id</span>, ingrésalo manualmente abajo.
-            </p>
-            <div className="mt-4 max-w-sm mx-auto flex gap-2">
-              <V2Input
-                placeholder="ej. quinua_snack_genz"
-                value={brandId}
-                onChange={(e) => setBrandId(e.target.value)}
-              />
-              <V2Button
-                variant="secondary"
-                size="md"
-                onClick={() => setBrandId(brandId.trim())}
-                disabled={!brandId.trim()}
-              >
-                Usar
-              </V2Button>
-            </div>
+
+            {availableBrands.length > 0 ? (
+              <div className="mt-6 max-w-sm mx-auto space-y-2">
+                <V2Label>Manuales disponibles</V2Label>
+                <select
+                  className="w-full rounded-xl border border-hairline bg-paper text-ink text-[14px] px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  value={brandId}
+                  onChange={(e) => setBrandId(e.target.value)}
+                >
+                  <option value="">— Elige una marca —</option>
+                  {availableBrands.map((m) => (
+                    <option key={m.brand_id} value={m.brand_id}>
+                      {m.brand_id}
+                      {m.judge_score != null ? ` · score ${m.judge_score.toFixed(2)}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <V2Button
+                  variant="accent"
+                  size="md"
+                  className="w-full mt-2"
+                  onClick={() => { if (brandId.trim()) setShowSelector(false); }}
+                  disabled={!brandId.trim()}
+                >
+                  Usar esta marca <IconArrowRight size={14} />
+                </V2Button>
+              </div>
+            ) : (
+              <>
+                <V2Button variant="accent" size="md" className="mt-6 mx-auto flex" onClick={() => navigate('/brand-dna')}>
+                  Ir a Brand DNA Architect <IconArrowRight size={14} />
+                </V2Button>
+                <p className="text-[11px] text-inkmute mt-6 text-center">
+                  o ingresa el <span className="mono">brand_id</span> manualmente:
+                </p>
+                <div className="mt-3 max-w-sm mx-auto flex gap-2">
+                  <V2Input
+                    placeholder="ej. quinua_snack_genz"
+                    value={brandId}
+                    onChange={(e) => setBrandId(e.target.value)}
+                  />
+                  <V2Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => { if (brandId.trim()) setShowSelector(false); }}
+                    disabled={!brandId.trim()}
+                  >
+                    Usar
+                  </V2Button>
+                </div>
+              </>
+            )}
           </V2Card>
         </section>
       </div>
@@ -210,7 +245,7 @@ export default function CreativePage() {
                 <IconBook size={11} /> RAG consulta el manual antes de cada generación
               </p>
             </div>
-            <V2Button variant="ghost" size="sm" onClick={() => setBrandId('')}>
+            <V2Button variant="ghost" size="sm" onClick={() => { setBrandId(''); setShowSelector(true); }}>
               Cambiar marca
             </V2Button>
           </div>
