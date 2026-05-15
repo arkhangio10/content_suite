@@ -31,12 +31,7 @@ def init_observability() -> "Langfuse | None":
 
     from langfuse import get_client
 
-    if not _instrumented:
-        from openinference.instrumentation.anthropic import AnthropicInstrumentor
-
-        AnthropicInstrumentor().instrument()
-        _instrumented = True
-        log.info("anthropic_instrumentor_enabled")
+    _instrumented = True  # instrumentor disabled — call_claude uses @observe(as_type="generation") instead
 
     _langfuse = get_client()
     log.info("langfuse_initialized", host=settings.langfuse_host)

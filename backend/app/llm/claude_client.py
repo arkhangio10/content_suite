@@ -13,6 +13,9 @@ from tenacity import (
     wait_exponential_jitter,
 )
 
+from langfuse import get_client as _get_langfuse_client
+from langfuse import observe
+
 from app.budget import BudgetExceeded, TraceBudget
 from app.config import get_settings
 
@@ -143,6 +146,7 @@ _claude_retry = retry(
 # Core call_claude function
 # ─────────────────────────────────────────────
 
+@observe(as_type="generation")
 async def call_claude(
     *,
     model: str,
@@ -197,6 +201,25 @@ async def call_claude(
     try:
         response = await _attempt()
         result = _extract_content(response)
+
+        # Report to Langfuse with cache token breakdown for accurate cost
+        try:
+            lf = _get_langfuse_client()
+            if lf is not None:
+                u = response.usage
+                lf.update_current_observation(
+                    name=span or model,
+                    model=model,
+                    usage_details={
+                        "input_tokens": getattr(u, "input_tokens", 0),
+                        "output_tokens": getattr(u, "output_tokens", 0),
+                        "cache_read_input_tokens": getattr(u, "cache_read_input_tokens", 0) or 0,
+                        "cache_creation_input_tokens": getattr(u, "cache_creation_input_tokens", 0) or 0,
+                    },
+                )
+        except Exception:
+            pass  # never let Langfuse break the pipeline
+
         if budget is not None:
             try:
                 budget.charge_anthropic_usage(model=model, usage=response.usage, span=span)
