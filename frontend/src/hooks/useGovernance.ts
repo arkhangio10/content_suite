@@ -16,6 +16,10 @@ export function usePendingReviews() {
     queryKey: ['governance-pending'],
     queryFn: () => listPendingReviews(),
     refetchInterval: 5000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    retry: 3,
+    retryDelay: 2000,
   });
 }
 
