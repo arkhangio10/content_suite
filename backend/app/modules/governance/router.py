@@ -222,6 +222,7 @@ async def list_pending(current_user: AnyAuthenticated) -> dict[str, Any]:
 async def get_content_full(content_id: str, current_user: AnyAuthenticated) -> dict[str, Any]:
     """Returns the content item + its associated review record (if any)."""
     from app.modules.creative.router import _content_items
+    from app.modules.brand_dna.router import _jobs
 
     item = _content_items.get(content_id)
     if item is None:
@@ -230,16 +231,35 @@ async def get_content_full(content_id: str, current_user: AnyAuthenticated) -> d
         (r for r in _reviews.values() if r.content_id == content_id),
         None,
     )
+
+    # Resolve the brand manual's core_idea + tagline for the drawer header
+    manual_summary: dict[str, Any] | None = None
+    for j in reversed(list(_jobs.values())):
+        if j.brand_id == item.brand_id and j.manual is not None:
+            manual_summary = {
+                "core_idea": j.manual.brand_essence.core_idea,
+                "tagline": j.manual.taglines[0] if j.manual.taglines else None,
+                "tone_descriptors": j.manual.tone_of_voice.descriptors[:4],
+                "vocabulary_preferred": j.manual.vocabulary.preferred[:8],
+                "vocabulary_forbidden": j.manual.vocabulary.forbidden[:8],
+                "judge_score": j.judge_scores,
+            }
+            break
+
     return {
         "content_id": item.content_id,
         "brand_id": item.brand_id,
         "content_type": item.content_type,
         "prompt": item.prompt,
         "generated_text": item.generated_text,
+        "brand_context_used": item.brand_context_used,
         "status": item.status,
+        "created_by": item.created_by,
         "review_id": review.review_id if review else None,
         "review_status": review.status if review else None,
         "reviewer_comment": review.reviewer_comment if review else None,
+        "manual_summary": manual_summary,
+        "char_count": len(item.generated_text or ""),
     }
 
 

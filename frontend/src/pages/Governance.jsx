@@ -230,20 +230,97 @@ function ApproverAQueue() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="paper-warm border-b border-hairline px-6 py-5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-inkmute mb-2">Prompt original</p>
-                <p className="text-[14px] text-inksoft leading-relaxed">"{open.prompt}"</p>
-              </div>
-
-              <div className="px-6 py-7">
-                <V2Label className="mb-3">Pieza generada</V2Label>
+              {/* Pieza generada — sección principal, grande */}
+              <div className="px-6 py-7 border-b border-hairline">
+                <div className="flex items-center justify-between mb-4">
+                  <V2Label>Pieza generada</V2Label>
+                  <span className="text-[11px] mono text-inkmute">
+                    {full?.char_count ? `${full.char_count} caracteres` : ''}
+                  </span>
+                </div>
                 {fullQuery.isLoading ? (
                   <p className="text-sm text-inkmute">Cargando contenido completo…</p>
                 ) : (
-                  <pre className="whitespace-pre-wrap font-sans text-[15px] leading-[1.75] text-ink bg-white">
-                    {full?.generated_text || open.excerpt}
-                  </pre>
+                  <div className="rounded-xl border border-hairline bg-paper/40 px-5 py-4">
+                    <pre className="whitespace-pre-wrap font-sans text-[15px] leading-[1.75] text-ink">
+                      {full?.generated_text || open.excerpt}
+                    </pre>
+                  </div>
                 )}
+              </div>
+
+              {/* Manual de marca — visión rápida de las reglas */}
+              {full?.manual_summary && (
+                <div className="px-6 py-6 border-b border-hairline paper-warm">
+                  <V2Label className="mb-3">Manual de marca consultado</V2Label>
+                  {full.manual_summary.core_idea && (
+                    <p className="font-serif italic text-[17px] leading-snug text-ink mb-1">
+                      "{full.manual_summary.core_idea}"
+                    </p>
+                  )}
+                  {full.manual_summary.tagline && (
+                    <p className="text-[12px] mono text-inkmute mb-3">
+                      tagline: {full.manual_summary.tagline}
+                    </p>
+                  )}
+                  {full.manual_summary.tone_descriptors?.length > 0 && (
+                    <div className="flex items-center gap-1.5 flex-wrap mb-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-inkmute mr-1">Tono:</span>
+                      {full.manual_summary.tone_descriptors.map((t, i) => (
+                        <span key={i} className="inline-flex items-center rounded-full bg-white border border-hairline px-2.5 py-0.5 text-[11px] text-inksoft">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    {full.manual_summary.vocabulary_preferred?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-good mb-1.5">Vocabulario preferido</p>
+                        <div className="flex flex-wrap gap-1">
+                          {full.manual_summary.vocabulary_preferred.map((w, i) => (
+                            <span key={i} className="inline-flex items-center rounded-md bg-goodsoft text-good px-2 py-0.5 text-[11px]">
+                              {w}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {full.manual_summary.vocabulary_forbidden?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-bad mb-1.5">Vocabulario prohibido</p>
+                        <div className="flex flex-wrap gap-1">
+                          {full.manual_summary.vocabulary_forbidden.map((w, i) => (
+                            <span key={i} className="inline-flex items-center rounded-md bg-badsoft text-bad px-2 py-0.5 text-[11px] line-through">
+                              {w}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Contexto RAG usado por la generación */}
+              {full?.brand_context_used?.length > 0 && (
+                <div className="px-6 py-6 border-b border-hairline">
+                  <V2Label className="mb-3">Contexto RAG inyectado al prompt</V2Label>
+                  <ul className="space-y-2">
+                    {full.brand_context_used.map((chunk, i) => (
+                      <li key={i} className="rounded-lg border border-hairline bg-white px-3 py-2 text-[12px] text-inksoft leading-relaxed">
+                        <span className="mono text-[10px] text-inkmute mr-2">#{i + 1}</span>
+                        {chunk}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Prompt original */}
+              <div className="px-6 py-5 paper-warm">
+                <V2Label className="mb-2">Prompt del creador</V2Label>
+                <p className="text-[13px] text-inksoft leading-relaxed">"{open.prompt}"</p>
               </div>
             </div>
 
