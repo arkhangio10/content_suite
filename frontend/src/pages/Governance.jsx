@@ -396,6 +396,9 @@ function VisionAudit() {
     reader.onload = () => {
       setFile({ name: f.name, size: f.size, dataUrl: reader.result, raw: f });
       setAuditResult(null);
+      setDecisionDone(null);
+      setDecisionMode(null);
+      setDecisionNote('');
     };
     reader.readAsDataURL(f);
   };
@@ -421,6 +424,10 @@ function VisionAudit() {
       toast.push({ kind: 'error', title: 'Error en la auditoría', body: err.message });
     }
   };
+
+  const [decisionMode, setDecisionMode] = useState(null); // null | 'approve' | 'changes'
+  const [decisionNote, setDecisionNote] = useState('');
+  const [decisionDone, setDecisionDone] = useState(null); // null | 'approved' | 'changes_requested'
 
   const phase = auditMutation.isPending ? 'scanning' : auditResult ? 'done' : file ? 'uploaded' : 'idle';
   const verdict = auditResult
@@ -603,18 +610,72 @@ function VisionAudit() {
           )}
         </div>
 
-        {phase === 'done' && (
-          <div className="border-t border-hairline px-6 py-4 flex items-center justify-end gap-3 bg-paper">
-            <V2Button variant="secondary" size="md">
-              <IconX size={14} /> Pedir cambios
-            </V2Button>
-            <V2Button
-              variant="success"
-              size="md"
-              onClick={() => toast.push({ kind: 'success', title: 'Auditoría confirmada', body: 'Findings enviados al creador.' })}
-            >
-              <IconCheck size={14} /> Aprobar con notas
-            </V2Button>
+        {phase === 'done' && !decisionDone && (
+          <div className="border-t border-hairline px-6 py-4 bg-paper">
+            {!decisionMode ? (
+              <div className="flex items-center justify-end gap-3">
+                <V2Button variant="secondary" size="md" onClick={() => setDecisionMode('changes')}
+                  className="border-bad/20 text-bad hover:bg-badsoft/40">
+                  <IconX size={14} /> Pedir cambios
+                </V2Button>
+                <V2Button variant="success" size="md" onClick={() => setDecisionMode('approve')}>
+                  <IconCheck size={14} /> Aprobar con notas
+                </V2Button>
+              </div>
+            ) : (
+              <div className="space-y-3 animate-fade-up">
+                <V2Label>
+                  {decisionMode === 'approve' ? 'Notas para el equipo creativo' : 'Motivo de los cambios solicitados'}
+                </V2Label>
+                <V2Textarea
+                  rows={2}
+                  value={decisionNote}
+                  onChange={(e) => setDecisionNote(e.target.value)}
+                  placeholder={decisionMode === 'approve'
+                    ? 'Indicaciones adicionales al creador…'
+                    : 'Especifica qué ajustar en la imagen…'}
+                />
+                <div className="flex items-center justify-between gap-3">
+                  <V2Button variant="ghost" size="sm"
+                    onClick={() => { setDecisionMode(null); setDecisionNote(''); }}>
+                    Cancelar
+                  </V2Button>
+                  <V2Button
+                    variant={decisionMode === 'approve' ? 'success' : 'danger'}
+                    size="md"
+                    onClick={() => {
+                      const done = decisionMode === 'approve' ? 'approved' : 'changes_requested';
+                      setDecisionDone(done);
+                      setDecisionMode(null);
+                      toast.push({
+                        kind: decisionMode === 'approve' ? 'success' : 'info',
+                        title: decisionMode === 'approve' ? 'Auditoría aprobada' : 'Cambios solicitados',
+                        body: decisionNote.trim() || (decisionMode === 'approve'
+                          ? 'Hallazgos enviados al equipo creativo.'
+                          : 'El equipo creativo será notificado.'),
+                      });
+                    }}
+                  >
+                    {decisionMode === 'approve'
+                      ? <><IconCheck size={14} /> Confirmar aprobación</>
+                      : <><IconX size={14} /> Solicitar cambios</>}
+                  </V2Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {phase === 'done' && decisionDone && (
+          <div className="border-t border-hairline px-6 py-4 bg-paper flex items-center justify-center">
+            {decisionDone === 'approved' ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-goodsoft text-good px-4 py-2 text-sm font-semibold ring-1 ring-good/20">
+                <IconCheck size={14} /> Auditoría confirmada — hallazgos enviados
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 rounded-full bg-warnsoft text-warn px-4 py-2 text-sm font-semibold ring-1 ring-warn/20">
+                <IconAlert size={14} /> Cambios solicitados al equipo creativo
+              </span>
+            )}
           </div>
         )}
       </V2Card>

@@ -124,18 +124,18 @@ async def _run_image_audit(
     guidelines = _get_brand_guidelines_text(brand_id)
 
     system = (
-        "You are a brand compliance auditor. Analyze the image against brand guidelines.\n"
-        "Respond with valid JSON only:\n"
+        "Eres un auditor de cumplimiento de marca. Analiza la imagen contra las guías de marca proporcionadas.\n"
+        "Responde ÚNICAMENTE con JSON válido. Todos los textos deben estar en ESPAÑOL:\n"
         "{\n"
         '  "passed": true|false,\n'
         '  "overall_score": 0.0-1.0,\n'
         '  "findings": [\n'
-        '    {"dimension": "color|typography|imagery|tone|messaging",\n'
+        '    {"dimension": "color|tipografía|imagen|tono|mensajes",\n'
         '     "status": "pass|fail|warning",\n'
-        '     "observation": "...",\n'
+        '     "observation": "descripción detallada en español",\n'
         '     "severity": "critical|moderate|minor"}\n'
         '  ],\n'
-        '  "recommendations": ["...", "..."]\n'
+        '  "recommendations": ["recomendación concreta en español", "..."]\n'
         "}"
     )
 
