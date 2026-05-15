@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import base64
+import json
+import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -167,13 +169,51 @@ async def _run_image_audit(
         model=settings.claude_model_vision,
         system=system,
         messages=messages,
-        max_tokens=1024,
+        max_tokens=2048,
         budget=budget,
         span="image_audit",
     )
 
+    return _parse_audit_json(response["text"])
+
+
+def _parse_audit_json(text: str) -> dict[str, Any]:
+    """Extract audit JSON with fallback recovery — never crash on minor format errors."""
     from app.llm.claude_client import extract_json
-    return extract_json(response["text"])
+
+    # Strategy 1: normal path
+    try:
+        return extract_json(text)
+    except Exception:
+        pass
+
+    # Strategy 2: remove trailing commas (common Claude artifact)
+    try:
+        cleaned = re.sub(r",(\s*[}\]])", r"\1", text)
+        return extract_json(cleaned)
+    except Exception:
+        pass
+
+    # Strategy 3: try raw json.loads on the full text after stripping fences
+    try:
+        stripped = re.sub(r"```[a-z]*\n?", "", text).strip()
+        return json.loads(stripped)
+    except Exception:
+        pass
+
+    # Strategy 4: graceful fallback — show a warning finding instead of crashing
+    log.warning("audit_json_parse_failed", preview=text[:300])
+    return {
+        "passed": False,
+        "overall_score": 0.0,
+        "findings": [{
+            "dimension": "sistema",
+            "status": "warning",
+            "observation": "No se pudo analizar la respuesta del modelo. Intenta nuevamente.",
+            "severity": "minor",
+        }],
+        "recommendations": ["Intenta correr la auditoría nuevamente."],
+    }
 
 
 # ─────────────────────────────────────────────
