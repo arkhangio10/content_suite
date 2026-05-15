@@ -621,12 +621,50 @@ function VisionAudit() {
             <div className="absolute inset-0">
               <img src={file.dataUrl} alt={file.name} className="w-full h-full object-contain p-6" />
               {phase === 'scanning' && (
-                <div className="absolute inset-6 overflow-hidden pointer-events-none">
-                  <div
-                    className="absolute left-0 right-0 top-0 h-[6px] bg-gradient-to-b from-accent/0 via-accent/50 to-accent/0"
-                    style={{ animation: 'scan 1.8s linear infinite' }}
-                  />
-                  <style>{`@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(100%)}}`}</style>
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {/* Dark overlay */}
+                  <div className="absolute inset-0 bg-black/30" />
+
+                  {/* Subtle grid */}
+                  <div className="absolute inset-0 opacity-[0.06]" style={{
+                    backgroundImage: 'linear-gradient(rgba(227,6,19,1) 1px,transparent 1px),linear-gradient(90deg,rgba(227,6,19,1) 1px,transparent 1px)',
+                    backgroundSize: '48px 48px',
+                  }} />
+
+                  {/* Corner brackets */}
+                  <div className="absolute top-5 left-5 w-7 h-7 border-t-[3px] border-l-[3px] border-accent rounded-tl" style={{animation:'cs-corner 1.6s ease-in-out infinite'}} />
+                  <div className="absolute top-5 right-5 w-7 h-7 border-t-[3px] border-r-[3px] border-accent rounded-tr" style={{animation:'cs-corner 1.6s ease-in-out infinite 0.2s'}} />
+                  <div className="absolute bottom-16 left-5 w-7 h-7 border-b-[3px] border-l-[3px] border-accent rounded-bl" style={{animation:'cs-corner 1.6s ease-in-out infinite 0.4s'}} />
+                  <div className="absolute bottom-16 right-5 w-7 h-7 border-b-[3px] border-r-[3px] border-accent rounded-br" style={{animation:'cs-corner 1.6s ease-in-out infinite 0.6s'}} />
+
+                  {/* Scan line with glow */}
+                  <div className="absolute left-5 right-5 h-[2px] rounded-full" style={{
+                    background: 'linear-gradient(to right,transparent 0%,#E30613 25%,#E30613 75%,transparent 100%)',
+                    boxShadow: '0 0 8px 4px rgba(227,6,19,0.45),0 0 22px 8px rgba(227,6,19,0.15)',
+                    animation: 'cs-scan 2.4s ease-in-out infinite',
+                  }} />
+
+                  {/* Status badge */}
+                  <div className="absolute bottom-5 left-0 right-0 flex justify-center">
+                    <div className="flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-full">
+                      <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                      <span className="text-[11px] font-mono tracking-widest">CLAUDE VISION · ANALIZANDO</span>
+                    </div>
+                  </div>
+
+                  <style>{`
+                    @keyframes cs-scan {
+                      0%   { top: 10%; opacity: 0; }
+                      6%   { opacity: 1; }
+                      44%  { top: 82%; opacity: 1; }
+                      50%  { top: 82%; opacity: 0; }
+                      100% { top: 10%; opacity: 0; }
+                    }
+                    @keyframes cs-corner {
+                      0%,100% { opacity: 1; }
+                      50%     { opacity: 0.25; }
+                    }
+                  `}</style>
                 </div>
               )}
             </div>
