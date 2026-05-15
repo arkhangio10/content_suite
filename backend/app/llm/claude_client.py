@@ -13,8 +13,8 @@ from tenacity import (
     wait_exponential_jitter,
 )
 
-from langfuse import get_client as _get_langfuse_client
 from langfuse import observe
+from langfuse.decorators import langfuse_context
 
 from app.budget import BudgetExceeded, TraceBudget
 from app.config import get_settings
@@ -204,19 +204,17 @@ async def call_claude(
 
         # Report to Langfuse with cache token breakdown for accurate cost
         try:
-            lf = _get_langfuse_client()
-            if lf is not None:
-                u = response.usage
-                lf.update_current_observation(
-                    name=span or model,
-                    model=model,
-                    usage_details={
-                        "input_tokens": getattr(u, "input_tokens", 0),
-                        "output_tokens": getattr(u, "output_tokens", 0),
-                        "cache_read_input_tokens": getattr(u, "cache_read_input_tokens", 0) or 0,
-                        "cache_creation_input_tokens": getattr(u, "cache_creation_input_tokens", 0) or 0,
-                    },
-                )
+            u = response.usage
+            langfuse_context.update_current_observation(
+                model=model,
+                name=span or model,
+                usage_details={
+                    "input": getattr(u, "input_tokens", 0),
+                    "output": getattr(u, "output_tokens", 0),
+                    "cache_read_input_tokens": getattr(u, "cache_read_input_tokens", 0) or 0,
+                    "cache_creation_input_tokens": getattr(u, "cache_creation_input_tokens", 0) or 0,
+                }
+            )
         except Exception:
             pass  # never let Langfuse break the pipeline
 
