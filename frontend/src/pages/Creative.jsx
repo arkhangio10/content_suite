@@ -76,6 +76,15 @@ export default function CreativePage() {
   const [contentId, setContentId] = useState(null);
 
   const upd = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Switching content type invalidates the current output — it was generated for a different format.
+  const handleTypeChange = (newType) => {
+    if (newType === form.type) return;
+    upd('type', newType);
+    setOutput('');
+    setContentId(null);
+    generateMutation.reset();
+  };
   const selectedBrand = brandId
     ? V2_BRANDS.find((b) => b.id.toLowerCase() === brandId.toLowerCase().replace(/_/g, ' '))
     : null;
@@ -214,7 +223,7 @@ export default function CreativePage() {
               return (
                 <button
                   key={t.id}
-                  onClick={() => upd('type', t.id)}
+                  onClick={() => handleTypeChange(t.id)}
                   className={cn(
                     'text-left rounded-2xl border p-4 transition-all duration-200 group',
                     active ? 'border-ink bg-paper' : 'border-hairline hover:border-hairlinestrong hover:bg-paper/50',
