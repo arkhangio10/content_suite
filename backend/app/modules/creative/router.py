@@ -63,6 +63,16 @@ class ContentItemOut(BaseModel):
 # Brand context helper
 # ─────────────────────────────────────────────
 
+def _resolve_manual_version(brand_id: str) -> int:
+    """Look up the brand manual version for a given brand_id (defaults to 1)."""
+    from app.modules.brand_dna.router import _jobs
+
+    for j in reversed(list(_jobs.values())):
+        if j.brand_id == brand_id and j.manual is not None:
+            return j.manual.meta.version
+    return 1
+
+
 def _get_brand_context(brand_id: str) -> list[str]:
     from app.modules.brand_dna.router import _jobs
 
@@ -169,6 +179,32 @@ async def generate_content(
     _content_items[content_id] = item
     log.info("content_generated", content_id=content_id, brand_id=req.brand_id, type=req.content_type)
 
+    # Best-effort REST persistence to Supabase (visible in the table editor for the demo)
+    try:
+        from app.db.persistence_rest import save_content_item, save_audit_log
+        manual_version = _resolve_manual_version(req.brand_id)
+        await save_content_item(
+            content_id=content_id,
+            brand_id=req.brand_id,
+            manual_version=manual_version,
+            content_type=req.content_type,
+            prompt=req.prompt,
+            generated_text=text,
+            brand_context_used=item.brand_context_used,
+            creator_id=str(current_user.id),
+            status="draft",
+        )
+        await save_audit_log(
+            action="create",
+            actor_id=str(current_user.id),
+            actor_role="creator",
+            content_item_id=content_id,
+            to_status="draft",
+            notes=f"Generated {req.content_type} for {req.brand_id}",
+        )
+    except Exception as exc:
+        log.warning("creative_rest_persist_failed", content_id=content_id, error=str(exc))
+
     return ContentItemOut(
         content_id=content_id,
         brand_id=item.brand_id,
@@ -194,6 +230,13 @@ async def submit_content(
         raise HTTPException(status_code=409, detail=f"Content is already '{item.status}'")
     item.status = "submitted"
     log.info("content_submitted", content_id=content_id)
+
+    try:
+        from app.db.persistence_rest import update_content_item_status
+        await update_content_item_status(content_id=content_id, status="submitted")
+    except Exception as exc:
+        log.warning("creative_submit_rest_failed", content_id=content_id, error=str(exc))
+
     return {"content_id": content_id, "status": "submitted"}
 
 

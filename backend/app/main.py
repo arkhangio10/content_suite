@@ -64,6 +64,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         log.warning("database_url_missing — auth role lookups will fail")
 
+    # Rehydrate in-memory state from Supabase REST so a Render cold-start
+    # doesn't lose the visible history of manuals, content, and reviews.
+    try:
+        from app.db.hydration import hydrate_state
+        await hydrate_state()
+    except Exception as exc:
+        log.warning("hydrate_state_failed", error=str(exc))
+
     log.info("startup_complete")
 
     try:

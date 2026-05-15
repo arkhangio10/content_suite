@@ -267,6 +267,21 @@ async def submit_for_review(
     _reviews[review_id] = record
     log.info("content_submitted_for_review", review_id=review_id, content_id=content_id)
 
+    try:
+        from app.db.persistence_rest import update_content_item_status, save_audit_log
+        await update_content_item_status(content_id=content_id, status="submitted")
+        await save_audit_log(
+            action="submit",
+            actor_id=str(current_user.id),
+            actor_role=current_user.role,
+            content_item_id=content_id,
+            from_status="draft",
+            to_status="pending_approver_a",
+            notes=f"Submitted for review (review_id={review_id})",
+        )
+    except Exception as exc:
+        log.warning("submit_review_rest_failed", review_id=review_id, error=str(exc))
+
     return ReviewOut(
         review_id=review_id,
         content_id=content_id,
@@ -305,6 +320,31 @@ async def review_content(
         item.status = new_status
 
     log.info("content_reviewed", review_id=review_id, decision=decision.decision, reviewer=current_user.id)
+
+    try:
+        from app.db.persistence_rest import update_content_item_status, save_audit_log
+        await update_content_item_status(
+            content_id=record.content_id,
+            status=new_status,
+            approver_a_id=str(current_user.id),
+            rejection_reason=decision.comment if decision.decision in ("reject", "request_changes") else None,
+        )
+        action_map = {
+            "approve": "approve_a",
+            "reject": "reject_a",
+            "request_changes": "reject_a",
+        }
+        await save_audit_log(
+            action=action_map[decision.decision],
+            actor_id=str(current_user.id),
+            actor_role=current_user.role,
+            content_item_id=record.content_id,
+            from_status="pending_approver_a",
+            to_status=new_status,
+            notes=decision.comment or None,
+        )
+    except Exception as exc:
+        log.warning("review_decision_rest_failed", review_id=review_id, error=str(exc))
 
     return ReviewOut(
         review_id=review_id,
@@ -368,6 +408,26 @@ async def audit_image(
     )
     _audits[audit_id] = audit
     log.info("image_audit_complete", audit_id=audit_id, brand_id=brand_id, passed=audit.passed)
+
+    try:
+        from app.db.persistence_rest import save_audit_log
+        await save_audit_log(
+            action="vision_audit_pass" if audit.passed else "vision_audit_fail",
+            actor_id=str(current_user.id),
+            actor_role=current_user.role,
+            notes=f"Vision audit for {brand_id} — score {audit.overall_score:.2f} — file {audit.filename}",
+            payload={
+                "audit_id": audit_id,
+                "brand_id": brand_id,
+                "filename": audit.filename,
+                "passed": audit.passed,
+                "overall_score": audit.overall_score,
+                "findings": audit.findings,
+                "recommendations": audit.recommendations,
+            },
+        )
+    except Exception as exc:
+        log.warning("vision_audit_rest_failed", audit_id=audit_id, error=str(exc))
 
     return AuditOut(
         audit_id=audit_id,

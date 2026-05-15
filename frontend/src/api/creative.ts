@@ -9,8 +9,10 @@ export async function generateContent(
 }
 
 export async function submitForReview(contentId: string): Promise<{ content_id: string; status: string }> {
-  const { data } = await apiClient.post(`/creative/${contentId}/submit`);
-  return data;
+  // Hits the GOVERNANCE submit endpoint (not /creative/{id}/submit) so a review
+  // record is created in _reviews — that's what Approver A's queue polls.
+  const { data } = await apiClient.post(`/governance/content/${contentId}/submit`);
+  return { content_id: data.content_id, status: data.status };
 }
 
 export async function getContentItem(contentId: string): Promise<ContentItem> {

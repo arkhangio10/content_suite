@@ -88,6 +88,14 @@ async def _run_pipeline_bg(
             except Exception as exc:
                 log.error("embed_failed", job_id=job_id, error=str(exc))
 
+        # REST-based persistence — works even when the asyncpg pool is unavailable
+        # (Render free tier + cross-region Supavisor). Best-effort; never raises.
+        if result.manual is not None:
+            try:
+                await _persist_manual_rest(job_id, brief, result)
+            except Exception as exc:
+                log.warning("persist_manual_rest_failed", job_id=job_id, error=str(exc))
+
         if result.manual is not None and db_pool is not None:
             try:
                 await _persist_manual(job_id, brief, result, db_pool)
@@ -106,6 +114,48 @@ async def _run_pipeline_bg(
         job.error = str(exc)
         job.completed_at = datetime.utcnow()
         log.error("pipeline_bg_error", job_id=job_id, error=str(exc))
+
+
+async def _persist_manual_rest(
+    job_id: str, brief: ProductBrief, result: Any
+) -> None:
+    """Persist a completed brand manual to Supabase via REST (service_role)."""
+    from app.db.persistence_rest import save_brand_manual, save_audit_log
+
+    manual = result.manual
+    judge = result.judge_scores
+    judge_payload: dict[str, Any] | None = None
+    if judge is not None:
+        try:
+            judge_payload = (
+                judge if isinstance(judge, dict) else judge.model_dump()
+            )
+        except Exception:
+            judge_payload = {"verdict": str(judge)}
+
+    ok = await save_brand_manual(
+        job_id=job_id,
+        brand_id=manual.meta.brand_id,
+        version=manual.meta.version,
+        manual_json=manual.model_dump(by_alias=True),
+        status=result.status,
+        trace_id=result.trace_id,
+        judge_scores=judge_payload,
+        partial_evidence=result.partial_evidence,
+        cost_usd=result.budget_summary.get("spent_usd") if result.budget_summary else None,
+        cache_hit_rate=result.budget_summary.get("cache_hit_rate") if result.budget_summary else None,
+        creator_id=_jobs[job_id].creator_id,
+    )
+    if ok:
+        await save_audit_log(
+            action="create",
+            actor_id=_jobs[job_id].creator_id,
+            actor_role="creator",
+            brand_manual_id=job_id,
+            to_status=result.status,
+            trace_id=result.trace_id,
+            notes=f"Generated brand manual for {manual.meta.brand_id}",
+        )
 
 
 async def _persist_manual(
