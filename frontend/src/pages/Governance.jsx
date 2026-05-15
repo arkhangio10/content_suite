@@ -29,6 +29,7 @@ import {
   usePendingReviews,
   useReviewContent,
 } from '@/hooks/useGovernance';
+import { useListBrandManuals } from '@/hooks/useBrandDna';
 
 export default function GovernancePage() {
   const { user } = useAuth();
@@ -382,6 +383,8 @@ function VisionAudit() {
   const ref = useV2Reveal();
   const toast = useV2Toast();
   const auditMutation = useImageAudit();
+  const manualsQuery = useListBrandManuals();
+  const availableBrands = (manualsQuery.data?.manuals || []).filter((m) => m.status === 'complete');
   const [file, setFile] = useState(null);
   const [brandId, setBrandId] = useState(() => {
     try { return sessionStorage.getItem('cs.lastBrandId') || ''; } catch { return ''; }
@@ -502,15 +505,33 @@ function VisionAudit() {
 
         <div className="mt-5 space-y-4">
           <div>
-            <V2Label className="mb-1.5">Brand ID (para el RAG)</V2Label>
-            <V2Input
-              className="mono"
-              value={brandId}
-              onChange={(e) => setBrandId(e.target.value)}
-              placeholder="ej. quinua_snack_genz"
-            />
+            <V2Label className="mb-1.5">Manual de marca</V2Label>
+            {availableBrands.length > 0 ? (
+              <select
+                value={brandId}
+                onChange={(e) => setBrandId(e.target.value)}
+                className="w-full rounded-xl border border-hairline bg-white px-3 py-2.5 text-[13px] text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
+              >
+                <option value="">— Selecciona una marca —</option>
+                {availableBrands.map((m) => (
+                  <option key={m.brand_id} value={m.brand_id}>
+                    {m.brand_id}
+                    {m.judge_scores?.overall ? ` · score ${Number(m.judge_scores.overall).toFixed(2)}` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <V2Input
+                className="mono"
+                value={brandId}
+                onChange={(e) => setBrandId(e.target.value)}
+                placeholder="ej. quinua_snack_genz"
+              />
+            )}
             <p className="text-[11px] text-inkmute mt-1.5 leading-relaxed">
-              El manual de esta marca se carga como contexto antes de evaluar la imagen.
+              {availableBrands.length > 0
+                ? `${availableBrands.length} manual${availableBrands.length > 1 ? 'es' : ''} disponible${availableBrands.length > 1 ? 's' : ''} · el contexto se inyecta antes de auditar.`
+                : 'Genera un manual en Brand DNA Architect para habilitarlo aquí.'}
             </p>
           </div>
           <V2Button variant="accent" className="w-full" size="lg" onClick={run} disabled={!file || phase === 'scanning'}>
