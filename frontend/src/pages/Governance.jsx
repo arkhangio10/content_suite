@@ -27,6 +27,7 @@ import {
   useContentFull,
   useImageAudit,
   usePendingReviews,
+  useRecordAuditDecision,
   useReviewContent,
 } from '@/hooks/useGovernance';
 import { useListBrandManuals } from '@/hooks/useBrandDna';
@@ -383,6 +384,7 @@ function VisionAudit() {
   const ref = useV2Reveal();
   const toast = useV2Toast();
   const auditMutation = useImageAudit();
+  const decisionMutation = useRecordAuditDecision();
   const manualsQuery = useListBrandManuals();
   const availableBrands = (manualsQuery.data?.manuals || []).filter((m) => m.status === 'complete');
   const [file, setFile] = useState(null);
@@ -664,8 +666,17 @@ function VisionAudit() {
                   <V2Button
                     variant={decisionMode === 'approve' ? 'success' : 'danger'}
                     size="md"
-                    onClick={() => {
+                    onClick={async () => {
+                      const apiDecision = decisionMode === 'approve' ? 'approve' : 'changes_requested';
                       const done = decisionMode === 'approve' ? 'approved' : 'changes_requested';
+                      // Persist to audit_logs (best-effort — never block the UI)
+                      if (auditResult?.audit_id) {
+                        decisionMutation.mutate({
+                          auditId: auditResult.audit_id,
+                          decision: apiDecision,
+                          note: decisionNote.trim(),
+                        });
+                      }
                       setDecisionDone(done);
                       setDecisionMode(null);
                       toast.push({

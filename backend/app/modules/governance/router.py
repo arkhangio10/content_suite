@@ -504,6 +504,34 @@ async def audit_image(
     )
 
 
+class AuditDecisionBody(BaseModel):
+    decision: Literal["approve", "changes_requested"]
+    note: str = Field(default="", max_length=1000)
+
+
+@router.post("/image/audit/{audit_id}/decision", summary="Record approver_b decision on image audit")
+async def record_audit_decision(
+    audit_id: str,
+    body: AuditDecisionBody,
+    current_user: ApproverBOnly,
+) -> dict[str, str]:
+    """Persist the approver_b approve/changes decision to audit_logs."""
+    audit = _audits.get(audit_id)
+    brand_id = audit.brand_id if audit else "unknown"
+    try:
+        from app.db.persistence_rest import save_audit_log
+        await save_audit_log(
+            action="vision_approve" if body.decision == "approve" else "vision_changes_requested",
+            actor_id=str(current_user.id),
+            actor_role=current_user.role,
+            notes=body.note or None,
+            payload={"audit_id": audit_id, "decision": body.decision, "brand_id": brand_id},
+        )
+    except Exception as exc:
+        log.warning("audit_decision_persist_failed", audit_id=audit_id, error=str(exc))
+    return {"audit_id": audit_id, "decision": body.decision, "status": "recorded"}
+
+
 @router.get("/audits/{brand_id}", summary="List image audits for a brand")
 async def list_audits(
     brand_id: str,

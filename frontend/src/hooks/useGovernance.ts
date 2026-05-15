@@ -5,6 +5,7 @@ import {
   getReview,
   listAudits,
   listPendingReviews,
+  recordAuditDecision,
   reviewContent,
   submitContentForReview,
 } from '@/api/governance';
@@ -68,6 +69,13 @@ export function useImageAudit() {
     onSuccess: (audit) => {
       qc.invalidateQueries({ queryKey: ['audits', audit.brand_id] });
     },
+  });
+}
+
+export function useRecordAuditDecision() {
+  return useMutation({
+    mutationFn: (vars: { auditId: string; decision: 'approve' | 'changes_requested'; note: string }) =>
+      recordAuditDecision(vars.auditId, vars.decision, vars.note),
   });
 }
 

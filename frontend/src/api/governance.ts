@@ -50,6 +50,14 @@ export async function auditImage(
   return data;
 }
 
+export async function recordAuditDecision(
+  auditId: string,
+  decision: 'approve' | 'changes_requested',
+  note: string,
+): Promise<void> {
+  await apiClient.post(`/governance/image/audit/${auditId}/decision`, { decision, note });
+}
+
 export async function listAudits(brandId: string): Promise<ImageAuditResult[]> {
   const { data } = await apiClient.get<ImageAuditResult[]>(
     `/governance/audits/${encodeURIComponent(brandId)}`,
