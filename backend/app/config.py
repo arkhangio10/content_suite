@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     max_repair_iterations: int = Field(default=2, ge=0, le=5)
 
     cors_allowed_origins: str = Field(default="http://localhost:5173,http://localhost:3000")
+    cors_allowed_origin_regex: str = Field(default="")
 
     @field_validator("cors_allowed_origins")
     @classmethod
