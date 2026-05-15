@@ -213,7 +213,7 @@ function ApproverAQueue() {
       {open && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/30 animate-fade-up" onClick={close}></div>
-          <div className="w-full max-w-[760px] bg-white shadow-2xl flex flex-col animate-slide-in">
+          <div className="w-full max-w-[760px] bg-white shadow-2xl flex flex-col animate-slide-in h-screen">
             <div className="h-16 shrink-0 border-b border-hairline px-6 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <V2BrandMark
@@ -243,10 +243,10 @@ function ApproverAQueue() {
                 {fullQuery.isLoading ? (
                   <p className="text-sm text-inkmute">Cargando contenido completo…</p>
                 ) : (
-                  <div className="rounded-xl border border-hairline bg-paper/40 px-5 py-4">
-                    <pre className="whitespace-pre-wrap font-sans text-[15px] leading-[1.75] text-ink">
+                  <div className="rounded-xl border border-hairline bg-white px-5 py-4 max-h-[40vh] overflow-y-auto">
+                    <p className="whitespace-pre-wrap font-sans text-[15px] leading-[1.75] text-ink">
                       {full?.generated_text || open.excerpt}
-                    </pre>
+                    </p>
                   </div>
                 )}
               </div>
